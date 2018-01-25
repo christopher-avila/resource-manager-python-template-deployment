@@ -1,13 +1,12 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "adminUserName": {
-      "type": "string",
-      "defaultValue": "azureSample",
-      "metadata": {
-        "description": "User name for the Virtual Machine."
-      }
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+    "adminUsername": {
+        "type": "string",
+        "metadata": {
+          "description": "User name for the Virtual Machine."
+        }
     },
     "adminPassword": {
       "type": "securestring",
@@ -16,71 +15,30 @@
       }
     },
     "sshKeyData": {
-      "type": "string",
-      "metadata": {
-        "description": "SSH rsa public key file as a string."
-      }
-    },
-    "dnsLabelPrefix": {
-      "type": "string",
-      "metadata": {
-        "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
-      }
+        "type": "string",
+        "metadata": {
+          "description": "SSH rsa public key file as a string."
+        }
     },
     "vmSize": {
-      "type": "string",
-      "defaultValue": "Standard_D4_v3",
-      "metadata": {
-        "description": "Size of the VM"
-      }
+        "type": "string",
+        "defaultValue": "Standard_D4_v3",
+        "metadata": {
+          "description": "Size of the VM"
+        }
     },
     "vmName": {
-      "type": "string",
-      "metadata": {
-        "description": "Name of the VM"
-      }
-    },
-    "imagePublisher": {
-      "type": "string",
-      "defaultValue": "canonical",
-      "metadata": {
-        "description": "Name of the image publisher"
-      }
-    },
-    "imageOffer": {
-      "type": "string",
-      "defaultValue": "ubuntuserver",
-      "metadata": {
-        "description": "Name of the image offer"
-      }
+        "type": "string",
+        "metadata": {
+          "description": "Name of the VM"
+        }
     },
     "imageSku": {
-      "type": "string",
-      "defaultValue": "16.04.0-LTS",
-      "metadata": {
-        "description": "Name of the image sku"
-      }
-    },
-    "imageVersion": {
-      "type": "string",
-      "defaultValue": "latest",
-      "metadata": {
-        "description": "Name of the image sku"
-      }
-    },
-    "subnetName": {
-      "type": "string",
-      "defaultValue": "azsample-subnet",
-      "metadata": {
-        "description": "Name of the subnet"
-      }
-    },
-    "virtualNetworkName": {
-      "type": "string",
-      "defaultValue": "azsampleVNET",
-      "metadata": {
-        "description": "Name of the virtual network"
-      }
+        "type": "string",
+        "defaultValue": "16.04.0-LTS",
+        "metadata": {
+          "description": "Name of the image sku"
+        }
     },
     "scaleNumber": {
       "type": "int",
@@ -105,25 +63,20 @@
     }
   },
   "variables": {
-    "storageAccountName": "[uniqueString(resourceGroup().id)]",
-    "location": "[resourceGroup().location]",
-    "osDiskName": "osDisk1",
-    "addressPrefix": "10.0.0.0/16",
-    "subnetPrefix": "10.0.0.0/24",
-    "vmStorageAccountContainerName": "azsample-vhds",
-    "nicNameMaster": "nic",
-    "nicNameWorker": "nic-worker-",
-    "publicIPAddressName": "[concat(parameters('vmName'), '-azsamplePublicIP')]",
-    "publicIPAddressType": "Dynamic",
-    "storageAccountType": "Standard_LRS",
-    "networkSecurityGroupName": "[concat(parameters('vmName'), '-azsampleNSG')]",
-    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/',parameters('subnetName'))]",
     "apiVersion": "2015-06-15",
+    "imagePublisher": "Canonical",
+    "imageOffer": "UbuntuServer",
+    "ubuntuOSVersion": "16.04-LTS",
+    "dnsName": "[concat('slurm-', uniqueString(resourceGroup().id))]",
+    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+    "publicIPAddressName": "publicip",
+    "networkSecurityGroupName": "[concat(parameters('vmName'), '-azsampleNSG')]",
     "vmNameMaster": "[concat(parameters('vmName'), '-master')]",
     "vmNameWorker": "[concat(parameters('vmName'), '-worker')]",
+    "nicNameMaster": "nic",
+    "nicNameWorker": "nic-worker-",
     "networkSettings": {
+      "virtualNetworkName": "virtualnetwork",
       "addressPrefix": "10.0.0.0/16",
       "subnet": {
         "dse": {
@@ -140,25 +93,26 @@
         "master": "10.0.0.254"
       }
     },
+    "storageAccountName": "[uniqueString(resourceGroup().id)]",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets/', variables('networkSettings').virtualNetworkName, variables('networkSettings').subnet.dse.name)]",
     "installationCLI": "[concat('sh main-slurm.sh ', variables('vmNameMaster'), ' ', variables('networkSettings').statics.master, ' ', variables('vmNameWorker'), ' ', variables('networkSettings').statics.workerRange.base, ' ', variables('networkSettings').statics.workerRange.start, ' ', parameters('scaleNumber'), ' ', parameters('adminUsername'), ' ', parameters('adminPassword'), ' ', parameters('_artifactsLocation'))]"
-
   },
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
       "apiVersion": "2016-05-01",
-      "location": "[variables('location')]",
+      "location": "[resourceGroup().location]",
       "kind": "Storage",
       "sku": {
-        "name": "[variables('storageAccountType')]"
+        "name": "Standard_LRS"
       }
     },
     {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('networkSecurityGroupName')]",
-      "location": "[variables('location')]",
+      "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
           {
@@ -179,59 +133,60 @@
       }
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[variables('publicIPAddressName')]",
-      "location": "[variables('location')]",
-      "properties": {
-        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-        "dnsSettings": {
-          "domainNameLabel": "[parameters('dnsLabelPrefix')]"
-        }
-      }
-    },
-    {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2016-09-01",
       "type": "Microsoft.Network/virtualNetworks",
-      "name": "[parameters('virtualNetworkName')]",
-      "location": "[variables('location')]",
+      "name": "[variables('networkSettings').virtualNetworkName]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
       ],
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('addressPrefix')]"
+            "[variables('networkSettings').addressPrefix]"
           ]
         },
         "subnets": [
-          {
-            "name": "[parameters('subnetName')]",
-            "properties": {
-              "addressPrefix": "[variables('subnetPrefix')]",
-              "networkSecurityGroup": {
-                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
-              }
+            {
+                "name": "[variables('networkSettings').subnet.dse.name]",
+                "properties": {
+                    "addressPrefix": "[variables('networkSettings').subnet.dse.prefix]",
+                    "networkSecurityGroup": {
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                        }
+                    }
             }
-          }
         ]
       }
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2016-09-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsName')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2016-09-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicNameMaster')]",
-      "location": "[variables('location')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-        "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]"
+        "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
       ],
       "properties": {
         "ipConfigurations": [
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('networkSettings').statics.master]",
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
               },
@@ -244,13 +199,13 @@
       }
     },
     {
-      "apiVersion": "[variables('apiVersion')]",
+      "apiVersion": "2016-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmNameMaster')]",
-      "location": "[variables('location')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicNameMaster'))]"
+        "[variables('storageAccountName')]",
+        "[variables('nicNameMaster')]"
       ],
       "properties": {
         "hardwareProfile": {
@@ -273,8 +228,8 @@
         },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[parameters('imagePublisher')]",
-            "offer": "[parameters('imageOffer')]",
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
             "sku": "[parameters('imageSku')]",
             "version": "latest"
           },
@@ -293,12 +248,6 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicNameMaster'))]"
             }
           ]
-        },
-        "diagnosticsProfile": {
-          "bootDiagnostics": {
-            "enabled": "true",
-            "storageUri": "[concat('http://',variables('storageAccountName'),'.blob.core.windows.net')]"
-          }
         }
       },
       "resources": [
@@ -306,7 +255,7 @@
           "apiVersion": "2016-03-30",
           "type": "extensions",
           "name": "Installation",
-          "location": "[variables('location')]",
+          "location": "[resourceGroup().location]",
           "dependsOn": [
             "[variables('vmNameMaster')]"
           ],
@@ -331,9 +280,9 @@
       "apiVersion": "2016-09-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicNameWorker'), copyindex())]",
-      "location": "[variables('location')]",
+      "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[parameters('virtualNetworkName')]"
+        "[variables('networkSettings').virtualNetworkName]"
       ],
       "copy": {
         "name": "nicLoop",
@@ -374,12 +323,13 @@
         "osProfile": {
           "computerName": "[concat(variables('vmNameWorker'), copyindex())]",
           "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[parameters('imagePublisher')]",
-            "offer": "[parameters('imageOffer')]",
-            "sku": "[parameters('imageSku')]",
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('ubuntuOSVersion')]",
             "version": "latest"
           },
           "osDisk": {
@@ -400,5 +350,11 @@
         }
       }
     }
-  ]
+  ],
+  "outputs": {
+    "dnsName": {
+      "type": "string",
+      "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
+    }
+  }
 }

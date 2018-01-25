@@ -31,23 +31,27 @@ class Deployer(object):
             tenant=os.environ['AZURE_TENANT_ID']
         )
         self.client = ResourceManagementClient(self.credentials, self.subscription_id)
+        self.adminUsername = 'azureSample'
 
     def deploy(self):
         """Deploy the template to a resource group."""
         self.client.resource_groups.create_or_update(
             self.resource_group,
             {
-                'location':'westus'
+                'location':'westus2'
             }
         )
 
-        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'template.json')
+        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'slurm.json')
         with open(template_path, 'r') as template_file_fd:
             template = json.load(template_file_fd)
 
         parameters = {
             'sshKeyData': self.pub_ssh_key,
-            'vmName': 'azure-deployment-sample-vm',
+            'adminPassword': 'Ylosabes17#',
+            # 'vmName': 'slurm-vm',
+            'vmSize': 'Standard_D4_v3',
+            'scaleNumber': 1,
             'dnsLabelPrefix': self.dns_label_prefix
         }
         parameters = {k: {'value': v} for k, v in parameters.items()}
