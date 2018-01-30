@@ -4,7 +4,10 @@ import json
 from haikunator import Haikunator
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.resource.resources.models import DeploymentMode
+from array import array
 
 class Deployer(object):
     """ Initialize the deployer class with subscription, resource group and public key.
@@ -31,6 +34,10 @@ class Deployer(object):
             tenant=os.environ['AZURE_TENANT_ID']
         )
         self.client = ResourceManagementClient(self.credentials, self.subscription_id)
+        self.network_client = NetworkManagementClient(
+            self.credentials, self.subscription_id)
+        self.compute_client = ComputeManagementClient(self.credentials, self.subscription_id)
+
         self.adminUsername = 'azureSample'
 
     def deploy(self):
@@ -68,6 +75,29 @@ class Deployer(object):
             deployment_properties
         )
         deployment_async_operation.wait()
+
+    def getIPAddress(self):
+        return self.network_client.public_ip_addresses.get(self.resource_group, "publicip" ).ip_address
+
+    def stopMachines(self):
+        scaleNumber = 1
+        async_vm_stop = []
+        async_vm_stop.append(self.compute_client.virtual_machines.power_off(self.resource_group, 'master'))
+        for vm_index in range(scaleNumber):
+            async_vm_stop.append(self.compute_client.virtual_machines.power_off(self.resource_group, "worker{0}".format(vm_index)))
+
+        for wait_index in range(scaleNumber + 1):
+            async_vm_stop[wait_index].wait()
+
+    def resumeMachines(self):
+        scaleNumber = 1
+        async_vm_resume = []
+        async_vm_resume.append(self.compute_client.virtual_machines.start(self.resource_group, 'master'))
+        for vm_index in range(scaleNumber):
+            async_vm_resume.append(self.compute_client.virtual_machines.start(self.resource_group, "worker{0}".format(vm_index)))
+
+        for wait_index in range(scaleNumber + 1):
+            async_vm_resume[wait_index].wait()
 
     def destroy(self):
         """Destroy the given resource group"""
