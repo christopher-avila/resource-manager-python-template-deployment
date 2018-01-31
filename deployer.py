@@ -18,10 +18,11 @@ class Deployer(object):
     """
     name_generator = Haikunator()
 
-    def __init__(self, subscription_id, resource_group, pub_ssh_key_path='~/.ssh/id_rsa.pub'):
+    def __init__(self, subscription_id, resource_group, pub_ssh_key_path='~/.ssh/id_rsa.pub', scaleNumber=1):
         self.subscription_id = subscription_id
         self.resource_group = resource_group
         self.dns_label_prefix = self.name_generator.haikunate()
+        self.scaleNumber = scaleNumber
 
         pub_ssh_key_path = os.path.expanduser(pub_ssh_key_path)
         # Will raise if file not exists or not enough permission
@@ -49,7 +50,7 @@ class Deployer(object):
             }
         )
 
-        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'slurm.json')
+        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'slurm-template.json')
         with open(template_path, 'r') as template_file_fd:
             template = json.load(template_file_fd)
 
@@ -58,7 +59,7 @@ class Deployer(object):
             'adminPassword': 'Ylosabes17#',
             # 'vmName': 'slurm-vm',
             'vmSize': 'Standard_D4_v3',
-            'scaleNumber': 1,
+            'scaleNumber': self.scaleNumber,
             'dnsLabelPrefix': self.dns_label_prefix
         }
         parameters = {k: {'value': v} for k, v in parameters.items()}
