@@ -8,8 +8,10 @@ from deployer import Deployer
 # AZURE_CLIENT_ID: with your Azure Active Directory Application Client ID
 # AZURE_CLIENT_SECRET: with your Azure Active Directory Application Secret
 
-my_subscription_id = os.environ.get('AZURE_SUBSCRIPTION_ID', '11111111-1111-1111-1111-111111111111')   # your Azure Subscription Id
 scaleNumber = 1
+print("Credentials (client_id, client_secret, tenant_id, subscription_id): ({} {} {} {})\n".format(os.environ['AZURE_CLIENT_ID'], os.environ['AZURE_CLIENT_SECRET'], os.environ['AZURE_TENANT_ID'], os.environ['AZURE_SUBSCRIPTION_ID']))
+
+my_subscription_id = os.environ.get('AZURE_SUBSCRIPTION_ID', '11111111-1111-1111-1111-111111111111')   # your Azure Subscription Id
 my_resource_group = "rg-scale-{}".format(scaleNumber)            # the resource group for deployment
 my_pub_ssh_key_path = os.path.expanduser('~/.ssh/id_rsa.pub')   # the path to your rsa public key file
 

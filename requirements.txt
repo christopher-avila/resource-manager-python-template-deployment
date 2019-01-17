@@ -1,4 +1,6 @@
 azure-mgmt-resource==2.1.0
 azure-mgmt-network==2.5.0
 azure-mgmt-compute==4.4.0
+azure-mgmt-commerce==1.0.1
+bs4==0.0.1
 haikunator==2.1.0
